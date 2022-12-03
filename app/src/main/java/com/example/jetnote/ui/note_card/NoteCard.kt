@@ -1,6 +1,7 @@
 package com.example.jetnote.ui.note_card
 
 import android.text.format.DateFormat
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -40,12 +41,12 @@ import com.example.jetnote.db.entities.todo.Todo
 import com.example.jetnote.fp.getPriorityColor
 import com.example.jetnote.icons.*
 import com.example.jetnote.ui.ImageDisplayed
-import com.example.jetnote.ui.cloud_screen.MediaCloud
 import com.example.jetnote.ui.media_player_screen.NoteMediaPlayer
 import com.example.jetnote.vm.*
 import me.saket.swipe.SwipeAction
 import me.saket.swipe.SwipeableActionsBox
 import me.saket.swipe.rememberSwipeableActionsState
+import timber.log.Timber
 import java.io.File
 import java.util.*
 
@@ -157,17 +158,7 @@ private fun Card(
             HOME_SCREEN, TRASH_SCREEN -> {
                 ImageDisplayed(image = noteVM::imageDecoder.invoke(ctx, note.uid))
             }
-            else -> {
-                note.imageUrl?.let {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(it)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop
-                    )
-                }
+            else -> { Timber.tag(TAG).d("")
             }
         }
 
@@ -185,20 +176,11 @@ private fun Card(
         )
 
         //media display.
-        when (forScreens) {
-            HOME_SCREEN, TRASH_SCREEN -> {
                 if (
                     File(mediaPath).exists()
                 ) {
                     NoteMediaPlayer(localMediaUid = note.uid)
                 }
-            }
-            else -> {
-                note.audioUrl?.let {
-                    MediaCloud(remoteMediaUrl = it, note = note)
-                }
-            }
-        }
 
         //
         LazyRow {

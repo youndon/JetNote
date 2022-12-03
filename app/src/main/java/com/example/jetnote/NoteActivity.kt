@@ -7,11 +7,13 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import com.example.jetnote.cons.AUDIO_FILE
 import com.example.jetnote.cons.IMAGE_FILE
+import com.example.jetnote.db.entities.note.Note
 import com.example.jetnote.ui.root.AppTheme
 import com.example.jetnote.ui.root.NoteRoot
 import com.example.jetnote.vm.NoteVM
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import java.util.*
 
 @AndroidEntryPoint
 class NoteActivity : ComponentActivity() {
@@ -64,9 +66,7 @@ class NoteActivity : ComponentActivity() {
 //                Note(
 //                    uid = UUID.randomUUID().toString(),
 //                    title = it.key,
-//                    description = it.value,
-//                    color = 0xffff,
-//                    textColor = 0xffff
+//                    description = it.value
 //                )
 //            )
 //        }

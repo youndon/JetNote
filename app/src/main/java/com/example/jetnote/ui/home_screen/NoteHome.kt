@@ -1,20 +1,12 @@
 package com.example.jetnote.ui.home_screen
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.os.Build
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Scaffold
-import androidx.compose.material.SnackbarResult
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,17 +15,14 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.ImageLoader
-import coil.request.ImageRequest
 import com.example.jetnote.cons.*
+import com.example.jetnote.cons.Screens.HOME_SCREEN
 import com.example.jetnote.db.entities.Entity
 import com.example.jetnote.db.entities.label.Label
 import com.example.jetnote.db.entities.note.Note
 import com.example.jetnote.ds.DataStore
-import com.example.jetnote.cons.Screens.HOME_SCREEN
 import com.example.jetnote.fp.getMaterialColor
 import com.example.jetnote.icons.PLUS_ICON
 import com.example.jetnote.ui.layouts.VerticalGrid
@@ -41,14 +30,9 @@ import com.example.jetnote.ui.navigation_drawer.NavigationDrawer
 import com.example.jetnote.ui.note_card.NoteCard
 import com.example.jetnote.ui.snackebars.UndoSnackbar
 import com.example.jetnote.ui.top_action_bar.*
-import com.example.jetnote.ui.top_action_bar.dialogs.RevokeAccessDialog
-import com.example.jetnote.ui.top_action_bar.dialogs.SignInDialog
-import com.example.jetnote.ui.top_action_bar.utils.SignOut
 import com.example.jetnote.vm.*
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
-import com.jakewharton.processphoenix.ProcessPhoenix
-import kotlinx.coroutines.launch
 import java.util.*
 
 @SuppressLint(
@@ -60,10 +44,6 @@ import java.util.*
 @Composable
 fun NoteHome(
     noteVM: NoteVM = hiltViewModel(),
-    authViewModel: AuthVM = hiltViewModel(),
-    profileVM: ProfileVM = hiltViewModel(),
-    firestoreViewModel: FirestoreVM = hiltViewModel(),
-    storageViewModel: StorageVM = hiltViewModel(),
     entityVM: EntityVM = hiltViewModel(),
     navController: NavController,
 ) {
@@ -91,7 +71,6 @@ fun NoteHome(
         ORDER_BY_REMINDER -> remember(entityVM, entityVM::allRemindingNotes).collectAsState()
         else -> remember(entityVM, entityVM::allNotesById).collectAsState()
     }
-    val observerRemoteNotes = remember(firestoreViewModel, firestoreViewModel::notes)
 
     val uid = UUID.randomUUID().toString()
     val topAppBarState = rememberTopAppBarState()
@@ -106,12 +85,7 @@ fun NoteHome(
     val expandedState = remember { mutableStateOf(false) }
     val expandedSortMenuState = remember { mutableStateOf(false) }
 
-    val refreshState = rememberSwipeRefreshState(
-        authViewModel.isLoading ||
-                profileVM.isLoading ||
-                firestoreViewModel.isLoading ||
-                noteVM.isProcessing
-    )
+    val refreshState = rememberSwipeRefreshState(noteVM.isProcessing)
 
     val selectionState = remember { mutableStateOf(false) }
     val selectedNotes = remember { mutableStateListOf<Note>() }
@@ -122,97 +96,6 @@ fun NoteHome(
         scaffoldState = scaffoldState,
         scope = coroutineScope,
         trashedNotesState = trashedNotesState
-    )
-
-    if (signInDialogState.value) {
-        SignInDialog(signInDialogState = signInDialogState)
-    }
-
-    if (revokeAccessState.value) {
-        RevokeAccessDialog(dialogState = revokeAccessState) {
-            runCatching {
-                firestoreViewModel.apply {
-                    notes.value.data?.let {
-                        deleteAllDataFromCloud(it)
-                        storageViewModel.deleteAllNotesDataFromStorage(it)
-                    }
-                }
-            }.onSuccess {
-                profileVM.revokeAccess()
-            }
-        }
-    }
-
-    SignInWithGoogle(ctx = ctx) {
-        if (it) {
-            LaunchedEffect(it) {
-                ProcessPhoenix.triggerRebirth(ctx)
-            }
-        }
-    }
-
-    SignOut(
-        ctx = ctx,
-        action = {
-            if (it) {
-                LaunchedEffect(it) {
-                    navController.navigate(HOME_ROUTE)
-                }
-            }
-        }
-    )
-
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                runCatching {
-                    val credentials =
-                        authViewModel.oneTapClient.getSignInCredentialFromIntent(result.data)
-                    val googleIdToken = credentials.googleIdToken
-                    val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
-                    authViewModel.signInWithGoogle(googleCredentials)
-                }.onFailure {
-                    Toast.makeText(ctx, it.cause.toString(), Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-    @RequiresApi(Build.VERSION_CODES.DONUT)
-    fun launch(signInResult: BeginSignInResult) {
-        val intent = IntentSenderRequest.Builder(signInResult.pendingIntent.intentSender).build()
-        launcher.launch(intent)
-    }
-
-    OneTapSignIn(
-        ctx = ctx,
-        launch = {
-            LaunchedEffect(it) {
-                launch(it)
-            }
-        }
-    )
-
-    fun showSnackBar() = coroutineScope.launch {
-        val result = scaffoldState.snackbarHostState.showSnackbar(
-            message = "You need to re-authenticate before revoking the access.",
-            actionLabel = "Sign-out"
-        )
-        if (result == SnackbarResult.ActionPerformed) {
-            profileVM.signOut()
-        }
-    }
-
-    RevokeAccess(
-        action = { accessRevoked ->
-            if (accessRevoked) {
-                LaunchedEffect(accessRevoked) {
-                    navController.navigate(HOME_ROUTE)
-                }
-            }
-        },
-        showSnackBar = {
-            showSnackBar()
-        }
     )
 
     ModalNavigationDrawer(
@@ -276,37 +159,7 @@ fun NoteHome(
             }
         ) {
             SwipeRefresh(modifier = Modifier.fillMaxSize(),
-                state = refreshState, onRefresh = {
-                    observerRemoteNotes.value.data?.forEach { note ->
-                        scope.launch {
-                            // save remote notes in local database.
-                            noteVM.addNote(note)
-
-                            // save remote images in local images file.
-                            val ss = ImageLoader(ctx)
-                            val cc = ImageRequest.Builder(ctx)
-                                .data(note.imageUrl)
-                                .target {
-                                    noteVM.saveImageLocally(
-                                        img = it.toBitmap(),
-                                        path = ctx.filesDir.path + "/" + IMAGE_FILE,
-                                        name = note.uid + "." + JPEG
-                                    )
-                                }
-                                .build()
-                            ss.enqueue(cc)
-
-                            // save the audio file locally.
-                            note.audioUrl?.let { it1 ->
-                                noteVM.saveAudioLocally(
-                                    it1,
-                                    ctx.filesDir.path + "/" + AUDIO_FILE,
-                                    note.uid + "." + MP3)
-                            }
-                        }
-                    }
-
-                }) {
+                state = refreshState, onRefresh = {}) {
                 if (currentLayout) {
                     LazyColumn(
                         state = lazyListState,

@@ -88,17 +88,6 @@ fun NoteTopAppBar(
                     Layout(
                         dataStore = dataStore
                     )
-                    if (thisHomeScreen) {
-                        Account(
-                            expandedState = expandedAccountMenuState
-                        )
-                    }
-
-                    AccountListMenu(
-                        expandedState = expandedAccountMenuState,
-                        signInDialogState = signInDialogState,
-                        revokeAccessDialogState = revokeAccessDialogState
-                    )
                 }
             }
         },

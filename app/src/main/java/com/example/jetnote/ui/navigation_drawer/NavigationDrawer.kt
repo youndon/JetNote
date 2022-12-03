@@ -30,7 +30,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun NavigationDrawer(
     labelVM: LabelVM = hiltViewModel(),
-    profileVM: ProfileVM = hiltViewModel(),
     drawerState: DrawerState,
     navController: NavController,
     searchTitle: MutableState<String>?,
@@ -50,7 +49,7 @@ fun NavigationDrawer(
         LazyColumn {
             item {
                 Text(
-                    text = profileVM.displayName?.ifEmpty { APP_NAME } ?: APP_NAME,
+                    text = APP_NAME,
                     fontSize = 30.sp,
                     modifier = Modifier.padding(10.dp)
                 )
@@ -130,14 +129,7 @@ fun NavigationDrawer(
             }
 
             item {
-                NavigationDrawerItem(
-                    label = { Text("Cloud") },
-                    icon = { Icon(painterResource(CLOUD_ICON),null) },
-                    selected = false,
-                    onClick = {
-                        navController.navigate("cloud")
-                    }
-                )
+
             }
             item {
                 NavigationDrawerItem(

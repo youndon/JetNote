@@ -9,12 +9,10 @@ import androidx.navigation.navArgument
 import com.example.jetnote.cons.*
 import com.example.jetnote.ui.add_screen.NoteAdd
 import com.example.jetnote.ui.camera_screen.LaunchCameraX
-import com.example.jetnote.ui.cloud_screen.CloudNotes
 import com.example.jetnote.ui.draw_screen.DrawingNote
 import com.example.jetnote.ui.edit_screen.NoteEdit
 import com.example.jetnote.ui.home_screen.NoteHome
 import com.example.jetnote.ui.labels_screen.Labels
-import com.example.jetnote.ui.profile_screen.Profile
 import com.example.jetnote.ui.settings_screen.Settings
 import com.example.jetnote.ui.todo_list.TodoList
 import com.example.jetnote.ui.trash_screen.TrashScreen
@@ -133,12 +131,6 @@ fun NoteRoot() {
 
         composable(SETTING_ROUTE){
             Settings(navController)
-        }
-        composable(PROFILE_ROUTE) {
-            Profile(navController = navController)
-        }
-        composable(CLOUD_ROUTE) {
-            CloudNotes(navController = navController)
         }
         composable("labels/{$UID}", arguments = listOf(
             navArgument(UID) {
